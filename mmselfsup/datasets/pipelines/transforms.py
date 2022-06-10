@@ -482,3 +482,30 @@ class Solarization(object):
         repr_str += f'threshold = {self.threshold}, '
         repr_str += f'prob = {self.prob}'
         return repr_str
+
+
+@PIPELINES.register_module()
+class LinearNormalize(object):
+    """Normalize the image.
+
+    Args:
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB,
+            default is true.
+    """
+
+    def __init__(self, max_val=65535,rep_dim=-1):
+        self.max_val = max_val
+        # self.to_rgb = to_rgb
+        self.rep_dim = rep_dim
+
+    def __call__(self, img):
+        img = np.array(img)
+        img = img/self.max_val
+        return img
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'max_val={self.max_val})'
+        return repr_str
