@@ -17,24 +17,22 @@ class DdsmBreast(BaseDataSource):
 
     def __init__(self,
                  data_prefix,
+                 img_shape=(1,1120,896),
                  classes=None,
                  ann_file=None,
                  test_mode=False,
                  color_type='color',
                  channel_order='rgb',
-                 file_client_args=dict(backend='disk')):
-        super.__init__(
-            
+                 file_client_args=dict(backend='lmdb')):
+        self.img_shape = img_shape
+        super(DdsmBreast, self).__init__(
+            data_prefix = data_prefix,
+            ann_file = ann_file,
+            test_mode = test_mode,
+            color_type = color_type,
+            channel_order = channel_order,
+            file_client_args = file_client_args
         )
-        self.data_prefix = data_prefix
-        self.ann_file = ann_file
-        self.test_mode = test_mode
-        self.color_type = color_type
-        self.channel_order = channel_order
-        self.file_client_args = file_client_args
-        self.file_client = None
-        self.CLASSES = self.get_classes(classes)
-        self.data_infos = self.load_annotations()
 
     def get_img(self, idx):
         """Get image by index.
@@ -45,19 +43,20 @@ class DdsmBreast(BaseDataSource):
         Returns:
             Image: PIL Image format.
         """
+        reslut = self.data_infos[idx]
         if self.file_client is None:
-            self.file_client = mmcv.FileClient(db_path = self.data_infos['img_prefix'],**self.file_client_args)
+            self.file_client = mmcv.FileClient(db_path = reslut['img_prefix'],**self.file_client_args)
 
-        cc_byte = self.file_client.get(self.data_infos['img_info']['cc_view'])
-        mlo_byte = self.file_client.get(self.data_infos['img_info']['mlo_view'])
+        cc_byte = self.file_client.get(reslut['img_info']['cc_view'])
+        mlo_byte = self.file_client.get(reslut['img_info']['mlo_view'])
         
         if cc_byte is None or mlo_byte is None:
-            print(self.data_infos['img_id'])
+            print(reslut['img_id'])
 
         cc_img = np.frombuffer(cc_byte, np.uint16)
-        # mlo_img = np.frombuffer(mlo_byte, np.uint16)
-        cc_img = cc_img.reshape(self.data_infos['img_shape'])
-        mlo_img = mlo_img.reshape(self.data_infos['img_shape'])
+        mlo_img = np.frombuffer(mlo_byte, np.uint16)
+        cc_img = cc_img.reshape(reslut['img_shape']).astype(np.float32)
+        mlo_img = mlo_img.reshape(reslut['img_shape']).astype(np.float32)
 
         return (cc_img, mlo_img)
 
@@ -65,6 +64,7 @@ class DdsmBreast(BaseDataSource):
         assert self.ann_file ,'ann file cannot be none'
         self.samples = pd.read_csv(self.ann_file)
         data_infos = []
+        
         for idx, row in self.samples.iterrows():
             info = {'img_prefix': self.data_prefix}
             info['img_info'] = {'cc_view': row['cc_view'], 'mlo_view': row['mlo_view']}

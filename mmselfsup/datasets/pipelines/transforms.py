@@ -10,6 +10,7 @@ import torch
 import torchvision.transforms.functional as F
 from mmcv.utils import build_from_cfg
 from PIL import Image, ImageFilter
+import monai.transforms as T
 from timm.data import create_transform
 from torchvision import transforms as _transforms
 
@@ -508,4 +509,139 @@ class LinearNormalize(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         repr_str += f'max_val={self.max_val})'
+        return repr_str
+
+@PIPELINES.register_module()
+class MinMaxNormalize(object):
+    """Normalize the image.
+
+    Args:
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB,
+            default is true.
+    """
+    def __call__(self, img):
+        img = np.array(img)
+        img = img-img.min()
+        img = img/img.max()
+        return img
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'max_val={self.max_val})'
+        return repr_str
+
+@PIPELINES.register_module()
+class RandRotate(object):
+    """Normalize the image.
+
+    Args:
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB,
+            default is true.
+    """
+
+    def __init__(self,
+                 range,
+                 prob,
+                 ):
+        self.range = range
+        self.prob = prob
+        self.deform = T.RandRotate(
+            range_x = range,
+            prob = prob,
+        )
+
+    def __call__(self, img):
+        img = self.deform(img)
+        return img
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        # repr_str += f'range={self.range})'
+        # repr_str += f'prob={self.prob})'
+        return repr_str
+
+@PIPELINES.register_module()
+class RandAffine(object):
+    """Normalize the image.
+
+    Args:
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB,
+            default is true.
+    """
+
+    def __init__(self,
+                 rotate_range,
+                 shear_range,
+                 translate_range,
+                 scale_range,
+                 spatial_size,
+                 prob,
+                 ):
+        self.range = range
+        self.prob = prob
+        self.deform = T.RandAffine(
+            rotate_range = rotate_range,
+            shear_range = shear_range,
+            translate_range = translate_range,
+            scale_range = scale_range,
+            spatial_size = spatial_size,
+            prob = prob
+        )
+
+    def __call__(self, img):
+        img = self.deform(img)
+        return img
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        # repr_str += f'range={self.range})'
+        # repr_str += f'prob={self.prob})'
+        return repr_str
+
+@PIPELINES.register_module()
+class Rand2DElastic(object):
+    """Normalize the image.
+
+    Args:
+        mean (sequence): Mean values of 3 channels.
+        std (sequence): Std values of 3 channels.
+        to_rgb (bool): Whether to convert the image from BGR to RGB,
+            default is true.
+    """
+
+    def __init__(self,
+                 spacing,
+                 rotate_range,
+                 shear_range,
+                 translate_range,
+                 scale_range,
+                 spatial_size,
+                 prob,
+                 ):
+        self.range = range
+        self.prob = prob
+        self.deform = T.Rand2DElastic(
+            spacing = spacing,
+            rotate_range = rotate_range,
+            shear_range = shear_range,
+            translate_range = translate_range,
+            scale_range = scale_range,
+            spatial_size = spatial_size,
+            prob = prob
+        )
+
+    def __call__(self, img):
+        img = self.deform(img)
+        return img
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        # repr_str += f'range={self.range})'
+        # repr_str += f'prob={self.prob})'
         return repr_str

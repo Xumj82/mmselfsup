@@ -100,7 +100,8 @@ def train_model(model,
         prefetch=getattr(cfg, 'prefetch', False),
         seed=cfg.get('seed'),
         persistent_workers=cfg.persistent_workers,
-        img_norm_cfg=cfg.img_norm_cfg)
+        img_norm_cfg=cfg.img_norm_cfg
+        )
 
     # The overall dataloader settings
     loader_cfg.update({

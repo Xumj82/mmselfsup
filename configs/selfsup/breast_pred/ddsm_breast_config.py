@@ -9,8 +9,9 @@ _base_ = [
 data_source = 'DdsmBreast'
 dataset_type = 'BreastDuoViewDataset'
 max_pixel_val = 65535
+img_norm_cfg = None
 train_pipeline1 = [
-    dict(type='RandomResizedCrop', size=224, scale=(0.2, 1.)),
+    # dict(type='RandomResizedCrop', size=512, scale=(0.2, 1.)),
     # dict(
     #     type='RandomAppliedTrans',
     #     transforms=[
@@ -25,10 +26,10 @@ train_pipeline1 = [
     # dict(type='RandomGrayscale', p=0.2),
     # dict(type='GaussianBlur', sigma_min=0.1, sigma_max=2.0, p=1.),
     # dict(type='Solarization', p=0.),
-    dict(type='RandomHorizontalFlip'),
+    # dict(type='RandRotate',range=15, prob=1.0),
 ]
 train_pipeline2 = [
-    dict(type='RandomResizedCrop', size=224, scale=(0.2, 1.)),
+    # dict(type='RandomResizedCrop', size=512, scale=(0.2, 1.)),
     # dict(
     #     type='RandomAppliedTrans',
     #     transforms=[
@@ -43,31 +44,33 @@ train_pipeline2 = [
     # dict(type='RandomGrayscale', p=0.2),
     # dict(type='GaussianBlur', sigma_min=0.1, sigma_max=2.0, p=0.1),
     # dict(type='Solarization', p=0.2),
-    dict(type='RandomHorizontalFlip'),
+    # dict(type='RandRotate',range=15, prob=1.0),
 ]
 
 # prefetch
 prefetch = False
 if not prefetch:
     train_pipeline1.extend(
-        [dict(type='ToTensor'),
+        [
+        dict(type='ToTensor'),
         #  dict(type='DuoViewImageToTensor'),
-         dict(type='LinearNormalize', max_val=max_pixel_val),])
+         dict(type='MinMaxNormalize'),])
     train_pipeline2.extend(
         [dict(type='ToTensor'),
         #  dict(type='DuoViewImageToTensor'),
-         dict(type='LinearNormalize', max_val=max_pixel_val),])
+         dict(type='MinMaxNormalize'),])
 
 # dataset summary
 data = dict(
     samples_per_gpu=1,  # 256*16(gpu)=4096
-    workers_per_gpu=6,
+    workers_per_gpu=1,
     train=dict(
         type=dataset_type,
         data_source=dict(
             type=data_source,
-            data_prefix='/home/xumingjie/Desktop/ddsm_breast/',
-            ann_file='/home/xumingjie/Desktop/ddsm_breast/seq_lv_train_set.csv',
+            img_shape=(1,1120,896),
+            data_prefix='/mnt/h/datasets/ddsm_breast/ddsm_breast',
+            ann_file='/mnt/h/datasets/ddsm_breast/seq_lv_train_set.csv',
         ),
         num_views=[1, 1],
         pipelines=[train_pipeline1, train_pipeline2],
