@@ -1,9 +1,54 @@
 _base_ = [
-    '../_base_/models/mocov3_vit-small-p16.py',
+    # '../_base_/models/mocov3_vit-small-p16.py',
     '../_base_/schedules/adamw_coslr-300e_in1k.py',
     '../_base_/default_runtime.py',
 ]
 
+# model settings
+model = dict(
+    type='MoCoV3',
+    base_momentum=0.99,
+    # backbone=dict(
+    #     type='VisionTransformer',
+    #     arch='mocov3-small',  # embed_dim = 384
+    #     img_size=(1120,896),
+    #     in_channels=1,
+    #     patch_size=16,
+    #     stop_grad_conv1=True),
+    backbone=dict(
+        type='ResNet',
+        depth=50,
+        in_channels=1,
+        out_indices=[4],  # 0: conv-1, x: stage-x
+        norm_cfg=dict(type='BN')),
+    neck=dict(
+        type='NonLinearNeck',
+        in_channels=2048,
+        hid_channels=4096,
+        out_channels=256,
+        num_layers=3,
+        with_bias=False,
+        with_last_bn=True,
+        with_last_bn_affine=False,
+        with_last_bias=False,
+        with_avg_pool=True,
+        vit_backbone=False,
+        # norm_cfg=dict(type='LN'),
+        ),
+    head=dict(
+        type='MoCoV3Head',
+        predictor=dict(
+            type='NonLinearNeck',
+            in_channels=256,
+            hid_channels=4096,
+            out_channels=256,
+            num_layers=2,
+            with_bias=False,
+            with_last_bn=True,
+            with_last_bn_affine=False,
+            with_last_bias=False,
+            with_avg_pool=False),
+        temperature=0.2))
 
 # dataset settings
 data_source = 'DdsmBreast'
@@ -11,40 +56,20 @@ dataset_type = 'BreastDuoViewDataset'
 max_pixel_val = 65535
 img_norm_cfg = None
 train_pipeline1 = [
-    # dict(type='RandomResizedCrop', size=512, scale=(0.2, 1.)),
-    # dict(
-    #     type='RandomAppliedTrans',
-    #     transforms=[
-    #         dict(
-    #             type='ColorJitter',
-    #             brightness=0.4,
-    #             contrast=0.4,
-    #             saturation=0.2,
-    #             hue=0.1)
-    #     ],
-    #     p=0.8),
-    # dict(type='RandomGrayscale', p=0.2),
-    # dict(type='GaussianBlur', sigma_min=0.1, sigma_max=2.0, p=1.),
-    # dict(type='Solarization', p=0.),
-    # dict(type='RandRotate',range=15, prob=1.0),
+    # dict(type='RandRotate',range=0.2, prob=1.0),
+    dict(type='RandAffine',rotate_range=0.2,shear_range=0.2,translate_range=0.2, scale_range=0.2,spatial_size=None,prob=1.0),
+    dict(type='Rand2DElastic',
+         spacing = (30, 30),
+         magnitude_range = [5, 6],
+         prob = 1.0,)
 ]
 train_pipeline2 = [
-    # dict(type='RandomResizedCrop', size=512, scale=(0.2, 1.)),
-    # dict(
-    #     type='RandomAppliedTrans',
-    #     transforms=[
-    #         dict(
-    #             type='ColorJitter',
-    #             brightness=0.4,
-    #             contrast=0.4,
-    #             saturation=0.2,
-    #             hue=0.1)
-    #     ],
-    #     p=0.8),
-    # dict(type='RandomGrayscale', p=0.2),
-    # dict(type='GaussianBlur', sigma_min=0.1, sigma_max=2.0, p=0.1),
-    # dict(type='Solarization', p=0.2),
-    # dict(type='RandRotate',range=15, prob=1.0),
+    # dict(type='RandRotate',range=0.2, prob=1.0),
+    dict(type='RandAffine',rotate_range=0.2,shear_range=0.2,translate_range=0.2, scale_range=0.2,spatial_size=None,prob=1.0),
+    dict(type='Rand2DElastic',
+         spacing = (30, 30),
+         magnitude_range = [5, 6],
+         prob = 1.0,)
 ]
 
 # prefetch
@@ -52,13 +77,17 @@ prefetch = False
 if not prefetch:
     train_pipeline1.extend(
         [
+        dict(type='MinMaxNormalize'),
         dict(type='ToTensor'),
         #  dict(type='DuoViewImageToTensor'),
-         dict(type='MinMaxNormalize'),])
+         ])
     train_pipeline2.extend(
-        [dict(type='ToTensor'),
+       
+        [
+            dict(type='MinMaxNormalize'),
+            dict(type='ToTensor'),
         #  dict(type='DuoViewImageToTensor'),
-         dict(type='MinMaxNormalize'),])
+         ])
 
 # dataset summary
 data = dict(
@@ -69,8 +98,8 @@ data = dict(
         data_source=dict(
             type=data_source,
             img_shape=(1,1120,896),
-            data_prefix='/mnt/h/datasets/ddsm_breast/ddsm_breast',
-            ann_file='/mnt/h/datasets/ddsm_breast/seq_lv_train_set.csv',
+            data_prefix='/home/xumingjie/Desktop/ddsm_breast/ddsm_breast/',
+            ann_file='/home/xumingjie/Desktop/ddsm_breast/seq_lv_train_set.csv',
         ),
         num_views=[1, 1],
         pipelines=[train_pipeline1, train_pipeline2],

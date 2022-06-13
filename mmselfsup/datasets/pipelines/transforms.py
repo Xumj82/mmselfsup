@@ -23,6 +23,26 @@ for m in inspect.getmembers(_transforms, inspect.isclass):
         PIPELINES.register_module(m[1])
 
 
+# @PIPELINES.register_module(force=True)
+# class ToTensor(object):
+#     """Convert image or a sequence of images to tensor.
+
+#     This module can not only convert a single image to tensor, but also a
+#     sequence of images.
+#     """
+
+#     def __init__(self) -> None:
+#         self.transform = _transforms.ToTensor()
+
+#     def __call__(self, imgs: Union[object, Sequence[object]]) -> torch.Tensor:
+#         if isinstance(imgs, Sequence):
+#             imgs = list(imgs)
+#             for i, img in enumerate(imgs):
+#                 imgs[i] = self.transform(img)
+#         else:
+#             imgs = self.transform(imgs)
+#         return imgs
+
 @PIPELINES.register_module(force=True)
 class ToTensor(object):
     """Convert image or a sequence of images to tensor.
@@ -38,9 +58,9 @@ class ToTensor(object):
         if isinstance(imgs, Sequence):
             imgs = list(imgs)
             for i, img in enumerate(imgs):
-                imgs[i] = self.transform(img)
+                imgs[i] = torch.from_numpy(img)
         else:
-            imgs = self.transform(imgs)
+            imgs = torch.from_numpy(imgs)
         return imgs
 
 
@@ -617,17 +637,19 @@ class Rand2DElastic(object):
 
     def __init__(self,
                  spacing,
-                 rotate_range,
-                 shear_range,
-                 translate_range,
-                 scale_range,
-                 spatial_size,
+                 magnitude_range,
                  prob,
+                 rotate_range = None,
+                 shear_range= None,
+                 translate_range= None,
+                 scale_range= None,
+                 spatial_size= None,               
                  ):
         self.range = range
         self.prob = prob
         self.deform = T.Rand2DElastic(
             spacing = spacing,
+            magnitude_range = magnitude_range,
             rotate_range = rotate_range,
             shear_range = shear_range,
             translate_range = translate_range,
